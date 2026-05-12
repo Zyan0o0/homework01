@@ -22,11 +22,15 @@ let currentView = 'card';
 
 // DOM 元素 - 導覽
 const cardViewBtn = document.getElementById('cardViewBtn');
+const gridViewBtn = document.getElementById('gridViewBtn');
+const translateViewBtn = document.getElementById('translateViewBtn');
 const listViewBtn = document.getElementById('listViewBtn');
 const adminViewBtn = document.getElementById('adminViewBtn');
 
 // DOM 元素 - 視圖容器
 const cardView = document.getElementById('cardView');
+const gridView = document.getElementById('gridView');
+const translateView = document.getElementById('translateView');
 const listView = document.getElementById('listView');
 const adminView = document.getElementById('adminView');
 
@@ -38,12 +42,24 @@ const posEl = document.getElementById('partOfSpeech');
 const exampleEl = document.getElementById('example');
 const wordNumberEl = document.getElementById('wordNumber');
 const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
 const randomBtn = document.getElementById('randomBtn');
+const nextBtn = document.getElementById('nextBtn');
+
+// DOM 元素 - 網格模式
+const wordsGrid = document.getElementById('wordsGrid');
 
 // DOM 元素 - 搜尋
 const searchInput = document.getElementById('searchInput');
 const searchResult = document.getElementById('searchResult');
+
+// DOM 元素 - 翻譯工具
+const translateInput = document.getElementById('translateInput');
+const translateBtn = document.getElementById('translateBtn');
+const translateResult = document.getElementById('translateResult');
+const resultText = document.getElementById('resultText');
+const copyResultBtn = document.getElementById('copyResultBtn');
+const clearResultBtn = document.getElementById('clearResultBtn');
+const loadingIndicator = document.getElementById('loadingIndicator');
 
 // DOM 元素 - 列表模式
 const itemsPerPageSelect = document.getElementById('itemsPerPage');
@@ -81,11 +97,19 @@ function updateWordCount() {
 function setupEventListeners() {
     // 視圖切換
     cardViewBtn.addEventListener('click', () => switchView('card'));
+    gridViewBtn.addEventListener('click', () => switchView('grid'));
+    translateViewBtn.addEventListener('click', () => switchView('translate'));
     listViewBtn.addEventListener('click', () => switchView('list'));
     adminViewBtn.addEventListener('click', () => switchView('admin'));
 
     // 卡片模式
     card.addEventListener('click', () => card.classList.toggle('flipped'));
+    card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            card.classList.toggle('flipped');
+        }
+    });
     prevBtn.addEventListener('click', () => {
         currentIndex = (currentIndex - 1 + filteredWords.length) % filteredWords.length;
         displayWord();
@@ -101,6 +125,11 @@ function setupEventListeners() {
 
     // 搜尋
     searchInput.addEventListener('input', handleSearch);
+
+    // 翻譯工具
+    translateBtn.addEventListener('click', handleTranslate);
+    copyResultBtn.addEventListener('click', copyTranslationResult);
+    clearResultBtn.addEventListener('click', clearTranslationResult);
 
     // 列表模式
     itemsPerPageSelect.addEventListener('change', (e) => {
@@ -145,11 +174,15 @@ function setupEventListeners() {
 function switchView(view) {
     // 隱藏所有視圖
     cardView.classList.remove('active');
+    gridView.classList.remove('active');
+    translateView.classList.remove('active');
     listView.classList.remove('active');
     adminView.classList.remove('active');
 
     // 移除所有按鈕的 active 類別
     cardViewBtn.classList.remove('active');
+    gridViewBtn.classList.remove('active');
+    translateViewBtn.classList.remove('active');
     listViewBtn.classList.remove('active');
     adminViewBtn.classList.remove('active');
 
@@ -159,6 +192,15 @@ function switchView(view) {
         case 'card':
             cardView.classList.add('active');
             cardViewBtn.classList.add('active');
+            break;
+        case 'grid':
+            gridView.classList.add('active');
+            gridViewBtn.classList.add('active');
+            displayGridView();
+            break;
+        case 'translate':
+            translateView.classList.add('active');
+            translateViewBtn.classList.add('active');
             break;
         case 'list':
             listView.classList.add('active');
@@ -197,6 +239,102 @@ function displayWord() {
     card.classList.remove('flipped');
 }
 
+// ===== 網格模式 =====
+function displayGridView() {
+    wordsGrid.innerHTML = '';
+
+    // 顯示前10個單字（或全部如果少於10個）
+    const wordsToShow = filteredWords.slice(0, 10);
+
+    wordsToShow.forEach((word, index) => {
+        const gridCard = document.createElement('div');
+        gridCard.className = 'grid-card';
+        gridCard.innerHTML = `
+            <div class="front">
+                <h3>${word.english}</h3>
+                <div class="word-number">${index + 1} / ${wordsToShow.length}</div>
+            </div>
+            <div class="back">
+                <div class="chinese">${word.chinese}</div>
+                <div class="pos">${word.pos}</div>
+                <div class="example">${word.example}</div>
+            </div>
+        `;
+
+        // 添加點擊事件來翻轉卡片
+        gridCard.addEventListener('click', () => {
+            gridCard.classList.toggle('flipped');
+        });
+
+        wordsGrid.appendChild(gridCard);
+    });
+}
+
+// ===== 翻譯功能 =====
+async function handleTranslate() {
+    const text = translateInput.value.trim();
+    if (!text) {
+        alert('請輸入要翻譯的文字');
+        return;
+    }
+
+    const direction = document.querySelector('input[name="direction"]:checked').value;
+    const [fromLang, toLang] = direction.split('-');
+
+    // 顯示載入指示器
+    loadingIndicator.style.display = 'block';
+    translateResult.style.display = 'none';
+    translateBtn.disabled = true;
+
+    try {
+        const translatedText = await translateText(text, fromLang, toLang);
+        resultText.textContent = translatedText;
+        translateResult.style.display = 'block';
+    } catch (error) {
+        console.error('翻譯失敗:', error);
+        alert('翻譯失敗，請稍後再試');
+    } finally {
+        loadingIndicator.style.display = 'none';
+        translateBtn.disabled = false;
+    }
+}
+
+async function translateText(text, fromLang, toLang) {
+    // 使用 MyMemory Translation API (免費)
+    const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
+
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    if (data.responseStatus === 200) {
+        return data.responseData.translatedText;
+    } else {
+        throw new Error('翻譯API錯誤');
+    }
+}
+
+function copyTranslationResult() {
+    const text = resultText.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('翻譯結果已複製到剪貼簿');
+    }).catch(() => {
+        // 備用方法
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('翻譯結果已複製到剪貼簿');
+    });
+}
+
+function clearTranslationResult() {
+    translateInput.value = '';
+    translateResult.style.display = 'none';
+    resultText.textContent = '';
+}
+
 // ===== 搜尋功能 =====
 function handleSearch(e) {
     const query = e.target.value.toLowerCase().trim();
@@ -218,6 +356,8 @@ function handleSearch(e) {
     // 如果在卡片模式，更新顯示
     if (currentView === 'card') {
         displayWord();
+    } else if (currentView === 'grid') {
+        displayGridView();
     } else if (currentView === 'list') {
         refreshListView();
     }

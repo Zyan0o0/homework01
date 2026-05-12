@@ -19,6 +19,8 @@
         <nav class="sidebar">
             <div class="nav-buttons">
                 <button id="cardViewBtn" class="nav-btn active">卡片模式</button>
+                <button id="gridViewBtn" class="nav-btn">網格模式</button>
+                <button id="translateViewBtn" class="nav-btn">翻譯工具</button>
                 <button id="listViewBtn" class="nav-btn">列表模式</button>
                 <button id="adminViewBtn" class="nav-btn">管理單字</button>
             </div>
@@ -35,7 +37,7 @@
             <!-- 卡片模式 -->
             <section id="cardView" class="view active">
                 <div class="card-container">
-                    <div class="card" id="card">
+                    <div class="card" id="card" role="button" tabindex="0" aria-label="點擊翻面">
                         <div class="card-front">
                             <h2 id="word">apple</h2>
                             <p class="word-number" id="wordNumber">1 / 10</p>
@@ -47,10 +49,59 @@
                         </div>
                     </div>
                 </div>
+                <p class="card-tip">點擊卡片翻面，或使用下面按鈕切換單字。</p>
                 <div class="controls">
                     <button id="prevBtn" class="btn-primary">← 上一個</button>
                     <button id="randomBtn" class="btn-primary">隨機</button>
                     <button id="nextBtn" class="btn-primary">下一個 →</button>
+                </div>
+            </section>
+
+            <!-- 網格模式 -->
+            <section id="gridView" class="view">
+                <div class="grid-container">
+                    <div class="grid-header">
+                        <h2>10個單字網格</h2>
+                        <p>點擊卡片查看詳細資訊</p>
+                    </div>
+                    <div class="words-grid" id="wordsGrid">
+                        <!-- 動態生成10個單字卡片 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 翻譯工具 -->
+            <section id="translateView" class="view">
+                <div class="translate-container">
+                    <h2>翻譯工具</h2>
+                    <div class="translate-form">
+                        <div class="translate-input-group">
+                            <label for="translateInput">輸入要翻譯的文字:</label>
+                            <textarea id="translateInput" placeholder="請輸入英文或中文文字..." rows="4"></textarea>
+                        </div>
+                        <div class="translate-controls">
+                            <div class="direction-controls">
+                                <label>
+                                    <input type="radio" name="direction" value="en-zh" checked> 英文 → 中文
+                                </label>
+                                <label>
+                                    <input type="radio" name="direction" value="zh-en"> 中文 → 英文
+                                </label>
+                            </div>
+                            <button id="translateBtn" class="btn-translate">翻譯</button>
+                        </div>
+                    </div>
+                    <div class="translate-result" id="translateResult" style="display: none;">
+                        <h3>翻譯結果:</h3>
+                        <div class="result-text" id="resultText"></div>
+                        <div class="result-actions">
+                            <button id="copyResultBtn" class="btn-action">複製結果</button>
+                            <button id="clearResultBtn" class="btn-action">清除</button>
+                        </div>
+                    </div>
+                    <div class="loading" id="loadingIndicator" style="display: none;">
+                        <p>正在翻譯中...</p>
+                    </div>
                 </div>
             </section>
 
