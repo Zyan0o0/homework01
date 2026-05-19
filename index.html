@@ -4,13 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>背單字程式</title>
-    <link rel="stylesheet" href="styles.css">
+    <style><?!= include('styles') ?></style>
+    <script>
+        if (!window.google || !google.script || !google.script.run) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'styles.css';
+            document.head.appendChild(link);
+            const script = document.createElement('script');
+            script.src = 'script.js';
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+    </script>
 </head>
 <body>
     <div class="header">
         <h1>背單字程式</h1>
         <div class="stats">
-            <span id="wordCount">單字總數: 0</span>
+            <span id="wordCount">單字總數: 0</span> 
         </div>
     </div>
 
@@ -171,12 +183,14 @@
                         <button id="importBtn" class="btn-action">從 JSON 匯入</button>
                         <input type="file" id="importFile" accept=".json" style="display: none;">
                         <button id="clearBtn" class="btn-action btn-danger">清空所有單字</button>
+                        <button id="saveSheetBtn" class="btn-action btn-save">儲存到 Google 試算表</button>
                     </div>
+                    <div id="sheetStatus" class="sheet-status"></div>
                 </div>
             </section>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script><?!= include('script') ?></script>
 </body>
 </html>
